@@ -20,15 +20,10 @@ The deployment scripts use an IAM user with a role assigned to create the infras
             "Sid": "VisualEditor0",
             "Effect": "Allow",
             "Action": [
-                "states:*",
-                "cloudfront:*",
-                "cloudwatch:*",
-                "ses:*",
-                "apigateway:*",
-                "s3:*",
                 "lambda:*",
-                "route53:*",
-                "dynamodb:*"
+                "cloudformation:*",
+                "events:*",
+                "iam:*"
             ],
             "Resource": "*"
         }
@@ -40,7 +35,7 @@ The deployment scripts use an IAM user with a role assigned to create the infras
 
 If you are executing the stack from within a Windows environment, you can use the deploy_script.ps1 to do so. There are some placeholders in the file which you have to replace with actual values first:
 
-![/doc/images/deploy_script.PNG]()
+![](/doc/images/deploy_script.PNG)
 
 
 ## 4. Fill config/qa.json with values (optional)
