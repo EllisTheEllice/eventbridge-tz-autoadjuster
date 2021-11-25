@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Starter template with EventBridge rules and a lambda function which automatically adjusts these rules to summer-/wintertime
+
+Parameters:
+  AutomationAccountId:
+    Type: String
+
+Resources:
+  TimezoneAdjustmentLambda:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "adjust_timezones.yaml"
+      Parameters:
+        RulesToAdjust: !Join
+                        - ","
+                        - - rule1_name #todo: Replace these placeholders with rule names
+                          - rule1_name
+        AutomationAccountId: !Ref AutomationAccountId

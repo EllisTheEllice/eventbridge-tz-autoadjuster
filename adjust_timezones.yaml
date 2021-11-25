@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "This file contains everything necessary to set up the lambda to automatically adjust eventrule schedules"
+
+Parameters:
+  RulesToAdjust:
+    Type: String
+  AutomationAccountId:
+    Type: String
+
+Conditions:
+  CrossAccount: !Not [!Equals [ !Ref AutomationAccountId, '' ]]
+
+
+Resources:
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "LambdaRole"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AdminPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogDelivery
+                  - logs:CreateLogStream
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:DeleteDestination
+                  - logs:GetLogDelivery
+                  - logs:ListTagsLogGroup
+                  - logs:PutMetricFilter
+                  - logs:TagLogGroup
+                  - logs:DescribeSubscriptionFilters
+                  - logs:FilterLogEvents
+                  - logs:PutSubscriptionFilter
+                  - logs:PutResourcePolicy
+                  - logs:PutDestination
+                  - logs:PutDestinationPolicy"
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - events:PutTargets
+                  - events:PutRule
+                  - events:DescribeRule
+                  - events:ListRules
+                  - events:ListTagsForResource
+                  - events:TagResource
+                  - iam:PassRole
+                Resource: "*"
+
+  InvokeLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "InvokeLambdaRole"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: CloudWatchLogsDeliveryFullAccessPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogDelivery"
+                  - "logs:GetLogDelivery"
+                  - "logs:UpdateLogDelivery"
+                  - "logs:DeleteLogDelivery"
+                  - "logs:ListLogDeliveries"
+                  - "logs:PutResourcePolicy"
+                  - "logs:DescribeResourcePolicies"
+                  - "logs:DescribeLogGroups"
+                Resource: "*"
+        - PolicyName: StatemachineInvokePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:GetFunction
+                  - lambda:InvokeFunction
+                Resource: "*"
+
+  AdjustmentLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W3002
+    Properties:
+      Description: Function to rotate password of windows instance
+      Code: "function/"
+      FunctionName: adjust-timezones
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.8
+      Handler: adjust-timezones.lambda_handler
+      Environment:
+        Variables:
+          EVENTS_TO_ADJUST: !Ref RulesToAdjust
+      Timeout: 60
+
+  LambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AdjustmentLambda.Arn
+      Principal: 'events.amazonaws.com'
+
+  LambdaPermissionsCrossAccount:
+    Type: AWS::Lambda::Permission
+    Condition: CrossAccount
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AdjustmentLambda.Arn
+      Principal: !Sub arn:aws:iam::${AutomationAccountId}:root #allow access from automation account
+
+  ScheduleAdjustmentLambdaRuleTimeTriggered:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "ScheduledRule"
+      ScheduleExpression: 'cron(0 11,23 * * ? *)'
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt AdjustmentLambda.Arn
+          Id: AdjustmentLambda
+      RoleArn: !GetAtt InvokeLambdaRole.Arn
