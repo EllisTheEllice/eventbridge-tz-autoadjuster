@@ -31,6 +31,8 @@ The deployment scripts use an IAM user with a role assigned to create the infras
 }
 ```
 
+Not down the role´s arn as you will need it in the next step.
+
 ## 3. Replace placeholders in deploy_script.ps1
 
 If you are executing the stack from within a Windows environment, you can use the deploy_script.ps1 to do so. There are some placeholders in the file which you have to replace with actual values first:
