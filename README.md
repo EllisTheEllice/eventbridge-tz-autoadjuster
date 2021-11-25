@@ -1,6 +1,6 @@
 # What is the purpose of this project?
 
-See [this blog article]() for details on the background and purpose of this project.
+See [this blog article](https://www.cloud4engineers.com/posts/2021/11/automatically-adjust-aws-eventbridge-timezones/) for details on the background and purpose of this project.
 
 # Prerequisites
 
