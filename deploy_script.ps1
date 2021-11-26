@@ -13,7 +13,6 @@ if ($stage.Equals("qa")) {
     break
 }
 
-#docker run -ti --rm -v C:\Users\sengbers\Documents\Projekte\Covestro\dexicon:/apps -w /apps alpine/cfn-nag -i infrastructure -a parameters_dev.json
 aws cloudformation package --template-file infrastructure.yaml --s3-bucket $bucketname --output-template-file packaged_infrastructure.yaml --profile $aws_profile
 
 # ` will require always a protruding space for the next parameter
